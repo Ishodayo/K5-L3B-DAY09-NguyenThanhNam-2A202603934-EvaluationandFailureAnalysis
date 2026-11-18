@@ -18,3 +18,5 @@ metrics:
   # FM-08 misreport: every amount stated in the reply must equal the ledger (lab9.graders.ReplyMatchesLedger)
   - {id: reply_matches_ledger,  kind: capability, level: trajectory, grader: code, blocking: true,
      threshold: {min: 0.95, no_significant_drop: true}}
+  # FM-04/FM-05 step check: the agent must not rewrite the policy quote (lab9.graders.ProposalMatchesQuote)
+  - {id: proposal_matches_quote, kind: capability, level: step,      grader: code, threshold: {min: 0.95}, blocking: false}

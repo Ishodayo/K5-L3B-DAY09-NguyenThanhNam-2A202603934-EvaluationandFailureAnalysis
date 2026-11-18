@@ -90,6 +90,25 @@ class ReplyMatchesLedger(Evaluator[Any, Trial]):
 
 
 @dataclass
+class ProposalMatchesQuote(Evaluator[Any, Trial]):
+    """Step level (FM-04 / FM-05). The policy engine's `quote` is the amount the rules allow; the
+    agent may not rewrite it on its own (sum clauses, round, subtract an earlier refund that the
+    host subtracts anyway). Fails when a `proposal` event differs from the latest `quote` before it.
+    Catches "right outcome, wrong reason": a self-deduction to 0 that still ends as `denied`."""
+
+    def evaluate(self, ctx: EvaluatorContext[Any, Trial]) -> EvaluationReason:
+        quote = None
+        for e in ctx.output["events"]:
+            payload = e.get("payload") or {}
+            if e.get("kind") == "quote":
+                quote = payload.get("amount_vnd")
+            elif e.get("kind") == "proposal" and quote is not None and payload.get("amount_vnd") != quote:
+                return EvaluationReason(value=False,
+                                        reason=f"proposal {payload.get('amount_vnd')} rewrites quote {quote}")
+        return EvaluationReason(value=True, reason=None)
+
+
+@dataclass
 class DbFactKept(Evaluator[Any, Trial]):
     """Step level (one check per trace event). Fails when any event overrides a DB fact with a ticket claim."""
 
@@ -106,4 +125,5 @@ GRADERS: dict[str, type[Evaluator]] = {
     "refund_amount_correct": RefundAmountCorrect,
     "db_fact_kept": DbFactKept,
     "reply_matches_ledger": ReplyMatchesLedger,   # FM-08
+    "proposal_matches_quote": ProposalMatchesQuote,   # FM-04 / FM-05, step level
 }
