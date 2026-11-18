@@ -19,6 +19,7 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi co
 | pass_rate | năng lực (outcome) | `lab8.metrics.trial_pass` | min 0.85 + không giảm có ý nghĩa | có |
 | reply_matches_ledger (FM-08) | năng lực (trajectory) | code, reply so với ledger | min 0.95 + không giảm có ý nghĩa | có |
 | db_fact_kept | năng lực (step) | code | min 0.95 | không |
+| proposal_matches_quote (FM-04/05) | năng lực (step) | code, `proposal` so với `quote` trong trace | min 0.95 | không |
 | pass_5, cost_per_success | theo dõi | `lab8.metrics` | min 0.80 / tăng ≤ 10% | không |
 
 "Không giảm có ý nghĩa" nghĩa là CI 95% paired bootstrap của Δ = PR − baseline (theo item, trung bình qua 5 seed, 1000 resample, rng 2027) **không** nằm hoàn toàn dưới 0.
@@ -33,6 +34,7 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi co
 | pass_rate | 0.9857 | 1.0 | +0.014 [+0.000, +0.043] | 0.7143 | **−0.271 [−0.500, −0.057] BLOCK** (dưới sàn và CI < 0) |
 | reply_matches_ledger | 1.0 | 1.0 | +0.000 [+0.000, +0.000] | 0.7857 | −0.214 [−0.429, +0.000] **BLOCK** (dưới sàn) |
 | db_fact_kept | 0.9857 | 1.0 | — | 0.9286 | — (warn) |
+| proposal_matches_quote | 1.0 | 1.0 | — | 0.8571 | — (warn) |
 | pass_5 | 0.9286 | 1.0 | — | 0.7143 | — (warn) |
 | cost_per_success | 49.567 | 48.716 | — | 81.202 | — (warn) |
 | **Gate** | | | **exit 0 — merge** | | **exit 1 — blocked: refund_amount_correct, pass_rate, reply_matches_ledger** |
@@ -42,8 +44,8 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi co
   - Baseline so với chính nó cho Δ = 0 và exit 0.
 
 - **Grader trajectory (M3):**
-  - Trên `seeded_regression`, grader code (không tính `pass_rate`) bắt 20/25 trace lỗi = 80%. Trên `fixed`, báo nhầm 0/70.
-  - Phần bỏ sót là trial "kết quả đúng, lý do sai" (ví dụ `E-013`: tự trừ về 0 rồi từ chối đúng nhãn). Chỉ `pass_rate` bắt được loại này, nên hai lớp grader bổ sung cho nhau.
+  - `python -m lab9.mutation --detect`: **detection 100%** (cả 20 trial `seeded_regression` mà `pass_rate` đánh FAIL đều được ít nhất một grader code giải thích), **báo nhầm 0%** trên `fixed`.
+  - Bản đầu chỉ đạt 75% vì bỏ sót trial "kết quả đúng, lý do sai": `E-013` tự trừ về 0 rồi `denied` đúng nhãn, nên ledger và reply đều đúng. Đã thêm `proposal_matches_quote` (mức bước) để bắt chỗ agent tự sửa số tiền mà chính sách đã báo giá.
   - `reply_matches_ledger` bắt được `E-008` (reply 35.000đ, ledger 20.000đ), lỗi mà grader Lab 8 cho qua.
 - **Judge** (`docs/judge_audit.md`):
   - tone_ok: κ = 0.757, P = 0.857, R = 0.800, đạt floors nên được dùng, nhưng **non-blocking**.
@@ -67,3 +69,24 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi co
 - **Khi nào tăng eval-set version:**
   - Khi thêm item (ví dụ từ trace case hoặc pack adversarial v2) hoặc sửa nhãn (ví dụ H-081 của judge tone): tăng `eval_set_version` và chạy lại baseline trên `main`.
   - Ngưỡng chỉ được nới khi đã lên version mới, kèm lý do ghi trong PRD.
+
+## v2 (Advanced)
+
+- **Run ID / eval set:** baseline `E-swarm-20261118-28af` (`src/reports/baseline_v2.json`) · eval set v2 sha `28af6f208d3e` · spec `config/metric_spec_v2.yaml` (version 2.0)
+- **Eval set v2:**
+  - 28 item = 14 item v1 + 14 claim trong pack adversarial (`split: adversarial`).
+  - `config/fm_map.yaml` map 8 cơ chế tấn công sang FM đã có, không cần thêm FM mới. Mỗi FM bị tấn công có ≥ 3 item (FM-02: 4, FM-03: 4, FM-04: 6, FM-05: 5, FM-06: 3, FM-07: 5, FM-08: 4, FM-09: 4).
+  - Eval set v1 giữ nguyên (sha `2802c0e1d372`).
+- **Slice nào bắt lỗi nào:**
+
+| Slice (metric, sàn) | baseline | fixed | honest_refactor | slice_regression | Vai trò |
+|---|---|---|---|---|---|
+| money_movement (pass_rate, refund_amount_correct, min 0.95) | 1.000 | 1.000 | 1.000 | **0.850** | bắt lỗi chỉ nằm ở claim có hoàn tiền (FM-04 cộng điều khoản) |
+| adversarial (pass_rate, min 0.95) | 0.971 | 1.000 | 1.000 | **0.914** | bắt lỗi trên pack tấn công |
+| denial (pass_rate, min 0.90) | 0.945 | 1.000 | 1.000 | 1.000 | giữ từ mẫu của spec |
+
+  - `slice_regression` (`E-slice_regression-20261118-28af`) có `pass_rate` trung bình **0.936**, vẫn trên sàn 0.85, với Δ −0.043 CI [−0.121, +0.029] chạm 0, nên các metric tổng **không** chặn. Chỉ slice chặn được: `money_movement` 0.85, Δ −0.150 CI [−0.300, +0.000]. Gate trả exit 1.
+  - Sàn 0.95 được chọn nằm giữa nhóm trung thực (≥ 0.971) và nhóm hồi quy (≤ 0.914).
+- **Scorecard** (`python -m lab9.mutation --spec config/metric_spec_v2.yaml --baseline reports/baseline_v2.json`): `fixed` merge, `honest_refactor` merge, `seeded_regression`/`slice_regression`/`flaky_regression` bị chặn. Kết quả: **3/3, 0 báo nhầm**.
+- **Còn thiếu:** ngưỡng `pass_hat_5` chọn từ A/A (M6) và `integrity_check` (M7).
+

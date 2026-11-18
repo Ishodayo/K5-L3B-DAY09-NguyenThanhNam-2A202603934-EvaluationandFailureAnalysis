@@ -74,3 +74,14 @@ def test_reply_without_amount_or_no_reply_makes_no_claim(graders):
     assert graders.ReplyMatchesLedger().evaluate(ctx(trial(events=[]))).value is True
     t = ctx(trial(refund_vnd=0, events=[reply("Dạ, đơn O-202 chưa đủ điều kiện hoàn theo chính sách hiện hành.")]))
     assert graders.ReplyMatchesLedger().evaluate(t).value is True
+
+
+def test_proposal_rewriting_quote_is_flagged(graders):
+    # FM-05: quote 35.000đ, agent subtracts the earlier refund itself -> proposal 0 (outcome still "denied")
+    ev = [{"kind": "quote", "payload": {"amount_vnd": 35000}}, {"kind": "proposal", "payload": {"amount_vnd": 0}}]
+    assert graders.ProposalMatchesQuote().evaluate(ctx(trial(events=ev))).value is False
+
+
+def test_no_proposal_event_keeps_quote(graders):
+    ev = [{"kind": "quote", "payload": {"amount_vnd": 35000}}, reply("Dạ, LogiX đã hoàn 35.000đ cho đơn O-107.")]
+    assert graders.ProposalMatchesQuote().evaluate(ctx(trial(events=ev))).value is True

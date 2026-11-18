@@ -33,6 +33,7 @@ Trích `metric_spec.yaml`, giá trị baseline lấy từ `E-swarm-20261118-2802
 | db_fact_kept | năng lực (mức bước) | ≥ 0.95 | không (cảnh báo) | 0.9857 |
 | pass_5, cost_per_success | theo dõi | ≥ 0.80 / tăng ≤ 10% | không | 0.9286 / 49.567 |
 | reply_matches_ledger (FM-08) | năng lực (trajectory) | ≥ 0.95 và không giảm có ý nghĩa | có | 1.0 |
+| proposal_matches_quote (FM-04/05) | năng lực (mức bước) | ≥ 0.95 | không (cảnh báo) | 1.0 |
 
 "Giảm có ý nghĩa" = CI 95% paired bootstrap của Δ (PR − baseline) nằm hoàn toàn dưới 0.
 
