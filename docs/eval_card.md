@@ -4,7 +4,7 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi co
 
 - **Run ID / eval set SHA:** baseline `E-swarm-20261118-2802` (`src/reports/baseline_v1.json`) · PR `E-fixed-20261118-2802`, `E-seeded_regression-20261118-2802` · eval set SHA `2802c0e1d372`
 - **Phiên bản:**
-  - code: nhánh `starter/d09`; grader ở commit `10c2f36` (M3), bootstrap ở commit M4
+  - code: nhánh `starter/d09`; grader ở commit `10c2f36` (M3) và `cb5da4b` (thêm `proposal_matches_quote`), bootstrap ở commit `c104c38` (M4)
   - eval set v1 (sha `2802c0e1d372`) · `metric_spec_version` 1.0 · seeds 11/22/33/44/55 · LLM: MockLLM · Python 3.13
 - **Eval set:**
   - v1, 14 item × 5 seed = 70 trial; nguồn `lab8_public` (ma trận T01–T14)
