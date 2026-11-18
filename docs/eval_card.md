@@ -88,5 +88,22 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi co
   - `slice_regression` (`E-slice_regression-20261118-28af`) có `pass_rate` trung bình **0.936**, vẫn trên sàn 0.85, với Δ −0.043 CI [−0.121, +0.029] chạm 0, nên các metric tổng **không** chặn. Chỉ slice chặn được: `money_movement` 0.85, Δ −0.150 CI [−0.300, +0.000]. Gate trả exit 1.
   - Sàn 0.95 được chọn nằm giữa nhóm trung thực (≥ 0.971) và nhóm hồi quy (≤ 0.914).
 - **Scorecard** (`python -m lab9.mutation --spec config/metric_spec_v2.yaml --baseline reports/baseline_v2.json`): `fixed` merge, `honest_refactor` merge, `seeded_regression`/`slice_regression`/`flaky_regression` bị chặn. Kết quả: **3/3, 0 báo nhầm**.
-- **Còn thiếu:** ngưỡng `pass_hat_5` chọn từ A/A (M6) và `integrity_check` (M7).
+- **Nhiễu và độ tin cậy (M6):**
+  - **A/A** (`python -m lab9.mutation --spec config/metric_spec_v2.yaml --aa 66,77,88,99,110`): chạy `swarm` trên hai bộ seed 11…55 và 66…110. **Δ = 0.0000 ở mọi metric.** MockLLM tất định, và hai bộ seed lại trùng mẫu lỗi (55 và 110 đều chia hết cho 5), nên dải nhiễu bằng 0.
+  - **Với LLM thật, dải nhiễu > 0.** Nguyên nhân là sampling (temperature), API không tất định giữa các lần gọi, đổi phiên bản model phía nhà cung cấp, và timeout/retry. Cùng một agent chạy hai lần cũng có thể lệch vài điểm phần trăm. Một sàn nằm **trong** dải đó sẽ chặn PR trung thực một cách ngẫu nhiên, nên sàn phải nằm **ngoài** dải: đo A/A nhiều lần trên model thật, rồi đặt sàn thấp hơn baseline ít nhất bằng độ rộng dải.
+  - **pass^k** (`lab9.stats.pass_hat_k`) là tỉ lệ item đúng ở **cả** k lần chạy; **pass@k** là tỉ lệ đúng ít nhất 1 lần. Trên v2:
+
+| Shape | pass_rate | pass^3 | pass^5 | Gate |
+|---|---|---|---|---|
+| baseline `swarm` | 0.979 | 0.936 | 0.893 | merge |
+| `fixed`, `honest_refactor` | 1.000 | 1.000 | 1.000 | merge |
+| `flaky_regression` (`E-flaky_regression-20261118-28af`) | **0.914** | 0.743 | **0.571** | **BLOCK** (`pass_hat_5`) |
+
+  - **Sàn `pass_hat_5` = 0.85, blocking.** Sàn ≥ 0.8, nằm ngoài dải A/A (baseline 0.893 ± 0), và baseline so với chính nó vẫn merge. `flaky_regression` chỉ hỏng 1/5 seed nên `pass_rate` 0.914 vẫn trên sàn 0.85; `pass^5` thì rơi xuống 0.571 vì một lần hỏng đủ kéo cả item về 0.
+  - Ở lần chạy này, CI của `pass_rate` cũng nằm dưới 0 ([−0.114, −0.014]), vì bug làm tròn chạm nhiều item cùng lúc. Nhưng đó là may mắn của bộ seed này. `pass_hat_5` mới là tín hiệu không phụ thuộc vào chuyện lỗi dàn trải hay tập trung.
+- **Giới hạn cỡ mẫu:** một bug chỉ xuất hiện ở khoảng 1/3 số seed (`rare`, ví dụ seed chia hết cho 3) **không phát hiện ổn định với 5 seed**.
+  - Với seed 11/22/33/44/55, chỉ seed 33 dính. Với bộ seed khác, có thể dính 0, 1 hoặc 2 seed.
+  - Xác suất 5 lần chạy độc lập đều không thấy một bug xuất hiện 1/3 số lần là (2/3)⁵ ≈ 13%.
+  - Muốn bắt ổn định thì phải tăng số seed (ví dụ k = 10 thì (2/3)¹⁰ ≈ 1.7%), **không** hạ ngưỡng cho tới khi gate "bắt được" bug đó.
+- **Còn thiếu:** `integrity_check` (M7).
 
