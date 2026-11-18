@@ -14,7 +14,7 @@ Lệnh in ra ba phần: các event trong trace (`reply`, `decision`, `model_over
 
 | Trường | Nội dung |
 |---|---|
-| Trial | `seeded_regression C-014@11` = item `E-014` seed 11, run ID `E-seeded_regression-20261118-d8a3` (`src/reports/eval_seeded_regression.json`). Dòng đó có `refund_amount_correct=false`, `pass_rate=false`, `reply_matches_ledger=false` |
+| Trial | `seeded_regression C-014@11` = item `E-014` seed 11, run ID `E-seeded_regression-20261118-2802` (`src/reports/eval_seeded_regression.json`). Dòng đó có `refund_amount_correct=false`, `pass_rate=false`, `reply_matches_ledger=false` |
 | Triệu chứng | Grader Lab 8 FAIL `proposal_mismatch`. **Ledger ghi 90.000đ**, nhãn 120.000đ. Reply #6 nói "đã hoàn 120.000đ", tức là reply cũng lệch ledger (kéo theo cả triệu chứng FM-08) |
 | Bước sai đầu tiên | #5 `proposal {"amount_vnd": 120000}`: agent tự trừ 30.000đ đã hoàn trước khi gọi host |
 | Vì sao là bước *đầu tiên* | #2 investigator đọc đúng O-515 (trễ 5 ngày, đã xác minh hỏng). #3 `quote` 150.000đ đúng chính sách (SHIP-LATE-03 + DMG-04, cap 150.000đ). #4 `refund_history {refund_count: 1, refunded_vnd: 30000}` đúng dữ kiện. Đến #5 agent mới đổi số: host vốn đã tự trừ khoản đã hoàn, nên tiền bị trừ hai lần (150.000 − 30.000 − 30.000 = 90.000) |
