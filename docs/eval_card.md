@@ -105,5 +105,25 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10. Mọi co
   - Với seed 11/22/33/44/55, chỉ seed 33 dính. Với bộ seed khác, có thể dính 0, 1 hoặc 2 seed.
   - Xác suất 5 lần chạy độc lập đều không thấy một bug xuất hiện 1/3 số lần là (2/3)⁵ ≈ 13%.
   - Muốn bắt ổn định thì phải tăng số seed (ví dụ k = 10 thì (2/3)¹⁰ ≈ 1.7%), **không** hạ ngưỡng cho tới khi gate "bắt được" bug đó.
-- **Còn thiếu:** `integrity_check` (M7).
+- **Chống gian lận eval (M7):** trước khi so bất kỳ con số nào, gate chạy `integrity_check` (`src/lab9/gate.py`). Report không đáng tin thì gate trả exit 1 với lý do `INTEGRITY`. Hàm kiểm 6 nhóm:
+  1. Metric là NaN/inf. NaN so với mọi ngưỡng đều False, nên một gate ngây thơ sẽ cho qua.
+  2. `evaluator_failures` không rỗng, hoặc có dòng mà giá trị của một metric đã chấm không phải `True`/`False` (None, chuỗi…).
+  3. Độ phủ: số dòng ≠ item × seed, có dòng `(item, seed)` trùng, tập `(item, seed)` khác baseline, manifest khác baseline, hoặc seed khác spec.
+  4. Con số tổng phải khớp với các dòng: tính lại `mean`/`sum` và `pass_at_k`/`pass_hat_k` từ `rows` rồi so. Cách này bắt được metric bị sửa tay.
+  5. Slice tag của một item không được khác baseline.
+  6. **Ratchet** khi có `--base-spec` và cùng eval-set version: `min` không được giảm, `max`/`max_increase` không được tăng, blocking không được thành non-blocking, không được bỏ metric, slice hay `no_significant_drop`, không được giảm seed, `pass_k` hay confidence của bootstrap.
+
+| Trap (`python -m lab9.traps`) | Lý do gate chặn |
+|---|---|
+| `evaluator_errors_as_nan` | 9 dòng không có verdict; `pass_at_1` ghi 0.9357 nhưng các dòng cho 1.0 |
+| `dropped_failing_rows` | 131 dòng thay vì 28 × 5 = 140; thiếu 9 `(item, seed)` |
+| `cherry_picked_seeds` | thiếu 84 `(item, seed)`; seed [22, 44] khác baseline và spec |
+| `loosened_spec` | ratchet: 13 vi phạm (hạ `min`, bỏ `no_significant_drop`, bỏ slice…) |
+
+  - Cả 4 trap công khai đều bị chặn (traps exit 0). Thêm 15 test tự viết trong `tests/test_lab9_advanced_integrity.py` (dòng trùng, evaluator_failures trên run xanh, metric sửa tay, đổi slice tag, verdict thành chuỗi, inf, 6 kiểu nới spec) đều bị chặn, còn report trung thực và spec chặt hơn thì vẫn qua.
+  - Không báo nhầm: baseline so với chính nó (có `--base-spec`) vẫn merge. Scorecard vẫn 3/3, 0 báo nhầm. Gate v1 không đổi.
+  - **Trap có thể còn lọt:**
+    - Nếu **cả baseline lẫn PR** cùng bị sửa nhất quán, so tương đối không phát hiện được. Baseline phải sinh lại trên `main` và được `ci_check` đối chiếu.
+    - Report được "chạy thật" nhưng trên một shape khác với shape PR khai báo (đổi nhãn `shape`): integrity chỉ kiểm nội dung report, không kiểm report có đúng của code trong PR hay không. CI tự chạy eval thì mới chặn được.
+    - Một grader bị sửa để luôn trả `True`: report hoàn toàn nhất quán nên integrity không thấy. Phải review code grader và có test cho grader.
 
