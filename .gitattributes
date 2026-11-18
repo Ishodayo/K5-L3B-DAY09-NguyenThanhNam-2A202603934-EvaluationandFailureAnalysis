@@ -1,0 +1,4 @@
+# Eval-set files are hashed byte-for-byte (manifest eval_set_sha). Keep them LF on every OS
+# so a Windows checkout and the Linux CI compute the same SHA.
+src/data/eval/*.jsonl text eol=lf
+src/data/eval/*.json  text eol=lf
